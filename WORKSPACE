@@ -97,6 +97,36 @@ tock_repos(
     #libtock = "../libtock-rs",
 )
 
+#
+# Zephyr+Bazel integration.
+#
+load("//third_party/zephyr-bazel:repos.bzl", zephyr_bazel_repos="zephyr_bazel_repos")
+zephyr_bazel_repos(
+    # TODO: the zephyr-bazel repo (googlesource) and doesn't provide archives.
+    zephyr_bazel = "../zephyr-bazel",
+)
+# Create patch file that sets up a bazel workspace.
+load("@zephyr-bazel//:setup.bzl", "create_zephyr_patch_file")
+create_zephyr_patch_file(
+    name = "zephyr-patch",
+    filename = "patch.diff",
+)
+# Patch the zephyr repo.
+# TODO: consider using `new_local_repository` instead.
+load("@zephyr-bazel//:setup.bzl", "local_patched_repository")
+local_patched_repository(
+    name = "zephyr",
+    path = "../zephyr",
+    patches = [
+        "@zephyr-patch//:patch.diff",
+    ],
+)
+# Setup python deps for the zephyr repo.
+load("//third_party/zephyr:repos.bzl", "zephyr_pip_deps")
+zephyr_pip_deps()
+load("@py_deps//:requirements.bzl", zephyr_install_deps="install_deps")
+zephyr_install_deps()
+
 # OpenOCD
 load("//third_party/openocd:repos.bzl", "openocd_repos")
 openocd_repos()
